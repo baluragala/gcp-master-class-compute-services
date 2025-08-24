@@ -165,7 +165,7 @@ resource "google_compute_region_instance_group_manager" "web_igm" {
     type                         = "PROACTIVE"
     instance_redistribution_type = "PROACTIVE"
     minimal_action               = "REPLACE"
-    max_surge_fixed              = 2
+    max_surge_fixed              = 3
     max_unavailable_fixed        = 0
   }
 }
@@ -178,6 +178,11 @@ resource "google_compute_backend_service" "web_backend" {
   load_balancing_scheme = "EXTERNAL"
   timeout_sec           = 30
   health_checks         = [google_compute_health_check.web_health_check.id]
+  
+  depends_on = [
+    google_compute_health_check.web_health_check,
+    google_compute_region_instance_group_manager.web_igm
+  ]
 
   backend {
     group           = google_compute_region_instance_group_manager.web_igm.instance_group
