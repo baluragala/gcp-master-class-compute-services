@@ -20,6 +20,15 @@ Internet
 [Custom VPC Network] → [Subnet] ← [Firewall Rules]
 ```
 
+### 📊 Detailed Architecture Diagrams
+
+For comprehensive visual documentation of the infrastructure, see the interactive diagrams in the [`diagrams/`](./diagrams/) directory:
+
+- **[Architecture Overview](./diagrams/architecture-overview.mmd)** - Complete infrastructure flowchart showing all components and relationships
+- **[Request Flow Sequence](./diagrams/request-flow-sequence.mmd)** - Step-by-step request processing and load balancing flow
+
+These Mermaid diagrams can be viewed directly on GitHub or rendered using tools like [mermaid.live](https://mermaid.live).
+
 ### Key Components
 
 1. **VPC Network & Subnet**: Custom network with controlled IP ranges
@@ -225,8 +234,15 @@ gcloud compute backend-services get-health web-backend-service \
 ├── startup-script.sh          # VM initialization script
 ├── terraform.tfvars.example   # Example variables file
 ├── terraform.tfvars          # Your variables (create from example)
+├── deploy.sh                 # Automated deployment script
 ├── README.md                 # This documentation
-└── PLAN.md                   # Original project plan
+├── ARCHITECTURE.md           # Detailed technical architecture
+├── PLAN.md                   # Original project plan
+├── .gitignore               # Git ignore rules for Terraform files
+└── diagrams/                # Architecture diagrams
+    ├── README.md            # Diagram documentation
+    ├── architecture-overview.mmd    # Infrastructure flowchart
+    └── request-flow-sequence.mmd    # Request processing sequence
 ```
 
 ## 🔧 Customization Options

@@ -1,0 +1,105 @@
+flowchart TD
+    subgraph "Internet"
+        U1[User 1]
+        U2[User 2]
+        U3[User N...]
+    end
+    
+    subgraph "Google Cloud Platform"
+        subgraph "Global Load Balancer Layer"
+            SI[Static IP Address<br/>34.36.253.113]
+            GFR[Global Forwarding Rule<br/>Port 80 TCP]
+            THP[Target HTTP Proxy<br/>HTTP Protocol Handler]
+            UM[URL Map<br/>Routing Rules]
+        end
+        
+        subgraph "Backend Layer"
+            BS[Backend Service<br/>Load Balancing Logic<br/>Utilization Mode]
+            HC[Health Check<br/>HTTP Port 80<br/>10s interval]
+        end
+        
+        subgraph "Compute Layer - us-central1"
+            IGM[Managed Instance Group<br/>Target Size: 2<br/>Auto-healing Enabled<br/>Multi-zone Distribution]
+            IT[Instance Template<br/>Ubuntu 22.04 LTS<br/>e2-micro<br/>nginx + Custom HTML]
+        end
+        
+        subgraph "Zone us-central1-b"
+            VM1[VM Instance 1<br/>web-server-7gm6<br/>Internal IP: 10.0.1.2<br/>nginx Server]
+            HTML1[Custom HTML Page<br/>Server Identification<br/>Instance Metadata]
+        end
+        
+        subgraph "Zone us-central1-f"
+            VM2[VM Instance 2<br/>web-server-5g5r<br/>Internal IP: 10.0.1.3<br/>nginx Server]
+            HTML2[Custom HTML Page<br/>Server Identification<br/>Instance Metadata]
+        end
+        
+        subgraph "Network Layer"
+            VPC[VPC Network<br/>ha-web-vpc<br/>Custom Network]
+            SUB[Subnet<br/>ha-web-subnet<br/>10.0.1.0/24<br/>us-central1]
+        end
+        
+        subgraph "Security Layer"
+            FW1[Firewall Rule: allow-http<br/>Port 80<br/>Source: 0.0.0.0/0<br/>Target: web-server tag]
+            FW2[Firewall Rule: allow-https<br/>Port 443<br/>Source: 0.0.0.0/0<br/>Target: web-server tag]
+            FW3[Firewall Rule: allow-ssh<br/>Port 22<br/>Source: 0.0.0.0/0<br/>Target: web-server tag]
+            SA[Service Account<br/>web-server-sa<br/>Minimal Permissions]
+        end
+    end
+    
+    %% Traffic Flow
+    U1 --> SI
+    U2 --> SI
+    U3 --> SI
+    
+    SI --> GFR
+    GFR --> THP
+    THP --> UM
+    UM --> BS
+    
+    BS --> IGM
+    IGM --> IT
+    IT --> VM1
+    IT --> VM2
+    
+    VM1 --> HTML1
+    VM2 --> HTML2
+    
+    %% Health Checks
+    HC -.->|Health Check| VM1
+    HC -.->|Health Check| VM2
+    BS --> HC
+    
+    %% Network Connections
+    VM1 --> SUB
+    VM2 --> SUB
+    SUB --> VPC
+    
+    %% Security
+    FW1 --> VM1
+    FW1 --> VM2
+    FW2 --> VM1
+    FW2 --> VM2
+    FW3 --> VM1
+    FW3 --> VM2
+    
+    SA --> VM1
+    SA --> VM2
+    
+    %% Load Balancing Decision
+    BS -.->|Load Balance Decision<br/>Round Robin| VM1
+    BS -.->|Load Balance Decision<br/>Round Robin| VM2
+    
+    %% Auto-healing
+    IGM -.->|Auto-healing<br/>Replace Unhealthy| VM1
+    IGM -.->|Auto-healing<br/>Replace Unhealthy| VM2
+    
+    %% Styling
+    style SI fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
+    style BS fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+    style IGM fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    style VM1 fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style VM2 fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style VPC fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    style HC fill:#f1f8e9,stroke:#689f38,stroke-width:2px
+    style HTML1 fill:#e0f2f1,stroke:#00695c
+    style HTML2 fill:#e0f2f1,stroke:#00695c

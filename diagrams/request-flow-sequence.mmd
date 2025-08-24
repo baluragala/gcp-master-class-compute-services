@@ -1,0 +1,85 @@
+sequenceDiagram
+    participant User as Internet User
+    participant LB as Load Balancer<br/>(34.36.253.113)
+    participant Proxy as HTTP Target Proxy
+    participant URLMap as URL Map
+    participant Backend as Backend Service
+    participant HC as Health Check
+    participant IGM as Instance Group Manager
+    participant VM1 as VM Instance 1<br/>(us-central1-b)
+    participant VM2 as VM Instance 2<br/>(us-central1-f)
+    participant nginx1 as nginx Server 1
+    participant nginx2 as nginx Server 2
+    
+    Note over User,nginx2: High Availability Web Request Flow
+    
+    %% Health Check Process
+    HC->>VM1: HTTP GET / (every 10s)
+    VM1->>HC: 200 OK (HEALTHY)
+    HC->>VM2: HTTP GET / (every 10s)
+    VM2->>HC: 200 OK (HEALTHY)
+    HC->>Backend: Report: Both instances HEALTHY
+    
+    %% User Request Flow
+    User->>LB: HTTP GET http://34.36.253.113
+    Note over LB: Static IP receives request
+    
+    LB->>Proxy: Forward HTTP request
+    Note over Proxy: Handle HTTP protocol
+    
+    Proxy->>URLMap: Route request
+    Note over URLMap: Apply routing rules
+    
+    URLMap->>Backend: Send to backend service
+    Note over Backend: Load balancing decision<br/>Round-robin algorithm
+    
+    Backend->>IGM: Route to instance group
+    Note over IGM: Select healthy instance
+    
+    alt First Request - Route to VM1
+        IGM->>VM1: Forward request
+        VM1->>nginx1: Process HTTP request
+        nginx1->>VM1: Serve custom HTML<br/>Server: web-server-7gm6<br/>Zone: us-central1-b
+        VM1->>IGM: Return response
+        IGM->>Backend: Forward response
+        Backend->>URLMap: Return response
+        URLMap->>Proxy: Forward response
+        Proxy->>LB: Send response
+        LB->>User: HTTP 200 OK<br/>Custom HTML with server info
+    end
+    
+    %% Second request to demonstrate load balancing
+    User->>LB: HTTP GET http://34.36.253.113 (refresh)
+    LB->>Proxy: Forward HTTP request
+    Proxy->>URLMap: Route request
+    URLMap->>Backend: Send to backend service
+    Backend->>IGM: Route to instance group
+    
+    alt Second Request - Route to VM2
+        IGM->>VM2: Forward request (load balanced)
+        VM2->>nginx2: Process HTTP request
+        nginx2->>VM2: Serve custom HTML<br/>Server: web-server-5g5r<br/>Zone: us-central1-f
+        VM2->>IGM: Return response
+        IGM->>Backend: Forward response
+        Backend->>URLMap: Return response
+        URLMap->>Proxy: Forward response
+        Proxy->>LB: Send response
+        LB->>User: HTTP 200 OK<br/>Different server info
+    end
+    
+    %% Auto-healing scenario
+    Note over VM1,VM2: Auto-healing Scenario
+    VM1->>VM1: Instance becomes unhealthy
+    HC->>VM1: HTTP GET / (health check)
+    VM1-->>HC: Connection failed/timeout
+    HC->>Backend: Report: VM1 UNHEALTHY
+    Backend->>IGM: Remove VM1 from rotation
+    IGM->>VM1: Terminate unhealthy instance
+    IGM->>VM1: Create new instance (auto-healing)
+    VM1->>nginx1: Install nginx + custom HTML
+    HC->>VM1: HTTP GET / (health check)
+    VM1->>HC: 200 OK (HEALTHY)
+    HC->>Backend: Report: VM1 HEALTHY again
+    Backend->>IGM: Add VM1 back to rotation
+    
+    Note over User,nginx2: Load balancer ensures zero downtime<br/>during instance replacement
