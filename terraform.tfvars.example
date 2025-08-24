@@ -1,0 +1,17 @@
+# Example Terraform variables file
+# Copy this file to terraform.tfvars and update with your values
+
+# Required: Your GCP Project ID
+project_id = "your-gcp-project-id"
+
+# Optional: Override default region (default: us-central1)
+region = "us-central1"
+
+# Optional: Override default zone (default: us-central1-a)
+zone = "us-central1-a"
+
+# Optional: Override default machine type (default: e2-micro)
+machine_type = "e2-micro"
+
+# Optional: Override default environment (default: dev)
+environment = "dev"
