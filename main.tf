@@ -178,7 +178,7 @@ resource "google_compute_backend_service" "web_backend" {
   load_balancing_scheme = "EXTERNAL"
   timeout_sec           = 30
   health_checks         = [google_compute_health_check.web_health_check.id]
-  
+
   depends_on = [
     google_compute_health_check.web_health_check,
     google_compute_region_instance_group_manager.web_igm
